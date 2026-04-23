@@ -197,6 +197,7 @@ code { background:#1a2e1a; color:#7fffb0; padding:2px 6px; border-radius:4px; fo
   <button class="nav-tab" onclick="switchTab('supervisor',this)">👨‍💼 Supervisor</button>
   <button class="nav-tab" onclick="switchTab('society',this)">🏘️ Society</button>
   <button class="nav-tab" onclick="switchTab('stock',this)">📦 Stock Report</button>
+  <button class="nav-tab" onclick="switchTab('supreport',this)">🏆 Sup Report</button>
 </div>
 
 <div class="main">
@@ -368,6 +369,32 @@ code { background:#1a2e1a; color:#7fffb0; padding:2px 6px; border-radius:4px; fo
 </div>
 
 </div><!-- end main -->
+
+<!-- SUPERVISOR REPORT TAB -->
+<div id="tab-supreport" class="tab-content">
+  <div class="card">
+    <div class="card-title">
+      <div class="card-title-left">🏆 Supervisor Sales Ranking</div>
+    </div>
+    <div id="supReportCards"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">📊 Medicine-wise Breakdown</div></div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Supervisor</th>
+        <th>Keedo+</th>
+        <th>Herbotick</th>
+        <th>Enteroherb</th>
+        <th>Herbolact</th>
+        <th>Rumifi_H</th>
+        <th>Total Qty</th>
+        <th>Total ₹</th>
+      </tr></thead>
+      <tbody id="supMedTable"></tbody>
+    </table></div>
+  </div>
+</div>
 
 <!-- ========== IMPORT MODAL ========== -->
 <div class="modal-overlay" id="importModal">
@@ -773,8 +800,66 @@ function sum(arr, m, field) {
   return arr.filter(r=>r.medicine===m.name).reduce((a,r)=>a+(+r[field]||0),0);
 }
 
+function renderSupReport() {
+  const totals = {};
+  const qtys = {};
+  const medBreak = {};
+  supervisor.forEach(r => {
+    totals[r.sup] = (totals[r.sup]||0) + (+r.amt||0);
+    qtys[r.sup]   = (qtys[r.sup]||0)   + (+r.qty||0);
+    if(!medBreak[r.sup]) medBreak[r.sup]={};
+    medBreak[r.sup][r.medicine] = (medBreak[r.sup][r.medicine]||0) + (+r.qty||0);
+  });
+  const sorted = Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  const grandTotal = sorted.reduce((a,s)=>a+s[1],0);
+  const maxAmt = sorted[0]?.[1]||1;
+  const medals = ['🥇','🥈','🥉'];
+  const barColors = ['#EF9F27','#888780','#D85A30','#378ADD','#639922','#D4537E','#7F77DD','#1D9E75'];
+
+  document.getElementById('supReportCards').innerHTML = sorted.map(([name,amt],i) => {
+    const qty = qtys[name]||0;
+    const pct = Math.round((amt/maxAmt)*100);
+    const share = grandTotal>0?Math.round((amt/grandTotal)*100):0;
+    const medal = medals[i]||`${i+1}.`;
+    const color = barColors[i%barColors.length];
+    return `<div style="padding:12px 0;border-bottom:0.5px solid var(--color-border-tertiary);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:14px;font-weight:500;color:var(--color-text-primary);">${medal} ${name}</span>
+        <span style="font-size:14px;font-weight:500;color:var(--color-text-primary);">${rupee(amt)}</span>
+      </div>
+      <div style="background:var(--color-background-secondary);border-radius:4px;height:7px;margin-bottom:6px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;border-radius:4px;background:${color};"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-secondary);">
+        <span>${qty} units</span>
+        <span>${share}% share</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const medNames = MEDICINES.map(m=>m.name);
+  const shortNames = ['Keedo+','Herbotick','Enteroherb','Herbolact','Rumifi_H'];
+  document.getElementById('supMedTable').innerHTML = sorted.map(([name,amt],i) => {
+    const cols = medNames.map(mn => {
+      const q = (medBreak[name]&&medBreak[name][mn])||0;
+      return `<td class="mono">${q>0?q:'-'}</td>`;
+    }).join('');
+    return `<tr>
+      <td style="font-weight:500;">${name}</td>
+      ${cols}
+      <td class="mono diff-positive">${qtys[name]||0}</td>
+      <td class="mono diff-positive">${rupee(amt)}</td>
+    </tr>`;
+  }).join('') + `<tr style="font-weight:500;border-top:2px solid var(--color-border-tertiary);">
+    <td>மொத்தம்</td>
+    ${medNames.map(mn=>`<td class="mono">${supervisor.filter(r=>r.medicine===mn).reduce((a,r)=>a+(+r.qty||0),0)||'-'}</td>`).join('')}
+    <td class="mono">${supervisor.reduce((a,r)=>a+(+r.qty||0),0)}</td>
+    <td class="mono">${rupee(grandTotal)}</td>
+  </tr>`;
+}
+
 function renderAll() {
-  renderPurchase(); renderSupervisor(); renderSociety(); renderDashboard(); renderStock();
+  renderPurchase(); renderSupervisor(); renderSociety(); renderDashboard(); renderStock(); renderSupReport();
 }
 
 // ======= IMPORT FROM EXCEL =======

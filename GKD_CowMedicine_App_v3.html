@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GKD Cow Medicine Store v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&family=JetBrains+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<!-- SheetJS for Excel import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --green: #1a7a4a; --green-light: #22a060; --green-pale: #e8f5ee;
+  --amber: #d97706; --amber-pale: #fef3c7;
+  --red: #dc2626; --red-pale: #fee2e2;
+  --blue: #1e40af; --blue-pale: #dbeafe;
+  --purple: #7c3aed; --purple-pale: #ede9fe;
+  --bg: #f0f4f0; --card: #ffffff; --text: #1a2e1a; --text2: #4a6a4a;
+  --border: #c8ddc8; --shadow: 0 2px 12px rgba(26,122,74,0.10); --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans Tamil',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+.header {
+  background:linear-gradient(135deg,#0f4f2a 0%,#1a7a4a 60%,#22a060 100%);
+  padding:0 20px; display:flex; align-items:center; justify-content:space-between;
+  height:60px; box-shadow:0 3px 16px rgba(0,0,0,0.2); flex-wrap:wrap; gap:8px;
+}
+.header-left { display:flex; align-items:center; gap:10px; }
+.logo { font-family:'Syne',sans-serif; font-size:19px; font-weight:800; color:#fff; }
+.logo span { color:#7fffb0; }
+.subtitle { font-size:10px; color:#a8f0c8; }
+.header-btns { display:flex; gap:7px; flex-wrap:wrap; }
+.sync-btn {
+  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+  color:#fff; padding:6px 13px; border-radius:8px; cursor:pointer;
+  font-size:12px; display:flex; align-items:center; gap:5px; transition:all 0.2s; white-space:nowrap;
+}
+.sync-btn:hover { background:rgba(255,255,255,0.28); }
+.sync-btn.purple { background:rgba(124,58,237,0.4); border-color:rgba(167,139,250,0.5); }
+.sync-status { font-size:11px; color:#7fffb0; }
+
+.nav { background:#fff; border-bottom:2px solid var(--border); display:flex; padding:0 20px; gap:2px; overflow-x:auto; }
+.nav-tab {
+  padding:13px 18px 11px; font-size:13px; font-weight:600; border:none; background:none;
+  cursor:pointer; color:var(--text2); border-bottom:3px solid transparent; white-space:nowrap; transition:all 0.2s;
+}
+.nav-tab.active { color:var(--green); border-bottom-color:var(--green); }
+.nav-tab:hover:not(.active) { color:var(--green); background:#f5fbf7; }
+
+.main { padding:18px 20px; max-width:1300px; margin:0 auto; }
+
+.card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); padding:18px; margin-bottom:18px; }
+.card-title { font-size:15px; font-weight:700; color:var(--green); margin-bottom:14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); padding-bottom:11px; justify-content:space-between; }
+.card-title-left { display:flex; align-items:center; gap:8px; }
+
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:18px; }
+.stat-box { border-radius:10px; padding:15px 18px; border-left:4px solid; }
+.stat-box.green { background:var(--green-pale); border-color:var(--green); }
+.stat-box.amber { background:var(--amber-pale); border-color:var(--amber); }
+.stat-box.red { background:var(--red-pale); border-color:var(--red); }
+.stat-box.blue { background:var(--blue-pale); border-color:var(--blue); }
+.stat-box.purple { background:var(--purple-pale); border-color:var(--purple); }
+.stat-label { font-size:11px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; }
+.stat-value { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; margin-top:4px; }
+.stat-box.green .stat-value { color:var(--green); }
+.stat-box.amber .stat-value { color:var(--amber); }
+.stat-box.red .stat-value { color:var(--red); }
+.stat-box.blue .stat-value { color:var(--blue); }
+.stat-box.purple .stat-value { color:var(--purple); }
+.stat-sub { font-size:11px; color:var(--text2); margin-top:2px; }
+
+.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+.form-group { display:flex; flex-direction:column; gap:4px; }
+.form-group label { font-size:12px; font-weight:600; color:var(--text2); }
+.form-group input, .form-group select {
+  border:1.5px solid var(--border); border-radius:8px; padding:8px 11px;
+  font-size:13px; font-family:inherit; outline:none; transition:border 0.2s; background:#fff; color:var(--text);
+}
+.form-group input:focus, .form-group select:focus { border-color:var(--green); }
+.form-group input[readonly] { background:#f5f5f5; color:#888; }
+
+.btn { padding:9px 20px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; border:none; transition:all 0.2s; font-family:inherit; }
+.btn-primary { background:var(--green); color:#fff; }
+.btn-primary:hover { background:#156639; }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-danger:hover { background:#b91c1c; }
+.btn-amber { background:var(--amber); color:#fff; }
+.btn-amber:hover { background:#b45309; }
+.btn-purple { background:var(--purple); color:#fff; }
+.btn-purple:hover { background:#6d28d9; }
+.btn-blue { background:var(--blue); color:#fff; }
+.btn-blue:hover { background:#1e3a8a; }
+.btn-sm { padding:5px 12px; font-size:12px; }
+.btn-outline { background:transparent; border:1.5px solid var(--green); color:var(--green); }
+.btn-outline:hover { background:var(--green-pale); }
+
+.table-wrap { overflow-x:auto; margin-top:4px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead tr { background:linear-gradient(90deg,#0f4f2a,#1a7a4a); }
+th { color:#fff; padding:9px 11px; text-align:left; font-weight:600; font-size:12px; white-space:nowrap; }
+td { padding:8px 11px; border-bottom:1px solid #eef4ee; white-space:nowrap; }
+tr:hover td { background:#f5fbf7; }
+tr:last-child td { border-bottom:none; }
+.badge { padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+.badge-green { background:var(--green-pale); color:var(--green); }
+.badge-red { background:var(--red-pale); color:var(--red); }
+.badge-amber { background:var(--amber-pale); color:var(--amber); }
+.badge-purple { background:var(--purple-pale); color:var(--purple); }
+
+.action-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.diff-positive { color:var(--green); font-weight:700; }
+.diff-negative { color:var(--red); font-weight:700; }
+
+.toast {
+  position:fixed; bottom:22px; right:22px; background:#1a2e1a; color:#fff;
+  padding:11px 18px; border-radius:10px; font-size:13px; font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3); transform:translateY(100px); opacity:0;
+  transition:all 0.3s; z-index:9999; max-width:340px;
+}
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.success { border-left:4px solid var(--green); }
+.toast.error { border-left:4px solid var(--red); }
+.toast.info { border-left:4px solid var(--blue); }
+
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:500; align-items:center; justify-content:center; }
+.modal-overlay.show { display:flex; }
+.modal { background:#fff; border-radius:16px; padding:22px; width:92%; max-width:560px; box-shadow:0 20px 60px rgba(0,0,0,0.3); max-height:90vh; overflow-y:auto; }
+.modal-title { font-size:16px; font-weight:700; color:var(--green); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+
+/* IMPORT AREA */
+.import-drop {
+  border:2.5px dashed var(--border); border-radius:10px; padding:28px 20px;
+  text-align:center; cursor:pointer; transition:all 0.2s; margin:12px 0;
+  background:#fafffe;
+}
+.import-drop:hover, .import-drop.dragover { border-color:var(--green); background:var(--green-pale); }
+.import-drop .drop-icon { font-size:36px; margin-bottom:8px; }
+.import-drop p { font-size:13px; color:var(--text2); }
+.import-drop input[type=file] { display:none; }
+
+.import-preview { background:#f8faf8; border-radius:8px; padding:12px; margin-top:10px; font-size:12px; }
+.import-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #e8f0e8; }
+.import-row:last-child { border:none; }
+.import-sheet-tag { background:var(--green-pale); color:var(--green); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:700; }
+.import-count { font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--green); }
+
+/* CONFIG */
+.config-section { background:#f8faf8; border-radius:10px; padding:14px; margin-bottom:14px; }
+.config-section h4 { font-size:13px; font-weight:700; color:var(--green); margin-bottom:10px; }
+.config-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
+.config-row input { border:1.5px solid var(--border); border-radius:7px; padding:8px 10px; font-size:12px; font-family:'JetBrains Mono',monospace; width:100%; }
+
+code { background:#1a2e1a; color:#7fffb0; padding:2px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:11px; }
+
+.step-box { background:#f0f7ff; border-left:3px solid var(--blue); border-radius:6px; padding:10px 12px; margin:8px 0; font-size:12px; color:var(--text2); }
+.step-box b { color:var(--blue); }
+
+.mono { font-family:'JetBrains Mono',monospace; }
+.empty-msg { text-align:center; color:var(--text2); padding:28px; font-size:14px; }
+
+@media(max-width:600px){
+  .main { padding:10px 10px; }
+  .form-grid { grid-template-columns:1fr; }
+  .stats-grid { grid-template-columns:1fr 1fr; }
+  .header { height:auto; padding:10px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div>
+      <div class="logo">GKD <span>🐄</span> Medicine</div>
+      <div class="subtitle">Cow Medicine Store Management – 2026</div>
+    </div>
+  </div>
+  <div class="header-btns">
+    <span class="sync-status" id="syncStatus"></span>
+    <button class="sync-btn purple" onclick="openImportModal()">📥 Import Excel</button>
+    <button class="sync-btn" onclick="exportJSON()">💾 Backup</button>
+    <label class="sync-btn" style="background:#e67e22;cursor:pointer;position:relative;overflow:hidden;">
+      📂 Restore
+      <input type="file" accept=".json" onchange="importJSON(this)" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;">
+    </label>
+    <button class="sync-btn" onclick="openSyncModal()">⚙️ Sheets Config</button>
+    <button class="sync-btn" onclick="syncToSheets()">☁️ Sync Now</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nav-tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+  <button class="nav-tab" onclick="switchTab('purchase',this)">🛒 Purchase</button>
+  <button class="nav-tab" onclick="switchTab('supervisor',this)">👨‍💼 Supervisor</button>
+  <button class="nav-tab" onclick="switchTab('society',this)">🏘️ Society</button>
+  <button class="nav-tab" onclick="switchTab('stock',this)">📦 Stock Report</button>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="tab-content active">
+  <div class="stats-grid" id="dashStats"></div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">📈 Medicine-wise Summary</div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Medicine</th><th>P.Qty</th><th>S.Qty</th><th>Soc.Qty</th><th>P.Amt ₹</th><th>S.Amt ₹</th><th>Soc.Amt ₹</th><th>P→S Diff</th><th>S→Soc Diff</th></tr></thead>
+      <tbody id="dashTable"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">👨‍💼 Supervisor-wise Distribution</div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Supervisor</th><th>Total Qty</th><th>Total Amt ₹</th><th>Medicines</th></tr></thead>
+      <tbody id="supSumTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- PURCHASE -->
+<div id="tab-purchase" class="tab-content">
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">🛒 Purchase Entry</div></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="p_date"></div>
+      <div class="form-group"><label>Medicine</label>
+        <select id="p_medicine" onchange="autoFill('p')">
+          <option value="">-- Select --</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Brand</label><input type="text" id="p_brand" value="Animeta"></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="p_qty" oninput="calcAmt('p')" placeholder="0"></div>
+      <div class="form-group"><label>Rate ₹</label><input type="number" id="p_rate" oninput="calcAmt('p')" placeholder="0"></div>
+      <div class="form-group"><label>Amount ₹</label><input type="number" id="p_amt" readonly></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Remarks</label><input type="text" id="p_remarks" placeholder="Optional"></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="addPurchase()">➕ Add</button>
+      <button class="btn btn-amber" onclick="clearForm('p')">🔄 Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <div class="card-title-left">📋 Purchase Log</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="exportTableCSV('purchase')">📤 Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAll('purchase')">🗑 Clear All</button>
+      </div>
+    </div>
+    <div class="action-row"><span class="stat-label" id="purchaseCount"></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date</th><th>Medicine</th><th>Brand</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th><th>Remarks</th><th>Del</th></tr></thead>
+      <tbody id="purchaseTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- SUPERVISOR -->
+<div id="tab-supervisor" class="tab-content">
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">👨‍💼 Supervisor Distribution Entry</div></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="s_date"></div>
+      <div class="form-group"><label>Supervisor</label>
+        <select id="s_sup"><option value="">-- Select --</option>
+          <option>ASHOKRAJ</option><option>SUGAVANAN</option><option>ASHOK KUMAR</option>
+          <option>RAGUPATHY</option><option>SATHISH KUMAR</option><option>VENKATESH</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Medicine</label>
+        <select id="s_medicine" onchange="autoFill('s')"><option value="">-- Select --</option></select>
+      </div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="s_qty" oninput="calcAmt('s')" placeholder="0"></div>
+      <div class="form-group"><label>Rate ₹</label><input type="number" id="s_rate" oninput="calcAmt('s')" placeholder="0"></div>
+      <div class="form-group"><label>Amount ₹</label><input type="number" id="s_amt" readonly></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="addSupervisor()">➕ Add</button>
+      <button class="btn btn-amber" onclick="clearForm('s')">🔄 Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <div class="card-title-left">📋 Supervisor Log</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="exportTableCSV('supervisor')">📤 Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAll('supervisor')">🗑 Clear All</button>
+      </div>
+    </div>
+    <div class="action-row"><span class="stat-label" id="supCount"></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date</th><th>Supervisor</th><th>Medicine</th><th>Qty</th><th>Rate ₹</th><th>Amount ₹</th><th>Del</th></tr></thead>
+      <tbody id="supLogTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- SOCIETY -->
+<div id="tab-society" class="tab-content">
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">🏘️ Society Sales Entry</div></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="so_date"></div>
+      <div class="form-group"><label>Centre No</label><input type="text" id="so_centre_no" placeholder="e.g. 3507"></div>
+      <div class="form-group"><label>Centre Name</label><input type="text" id="so_centre_name" placeholder="e.g. ELAIYUR"></div>
+      <div class="form-group"><label>Line</label>
+        <select id="so_line"><option>NORTH</option><option>SOUTH</option><option>EAST</option><option>WEST</option></select>
+      </div>
+      <div class="form-group"><label>Supervisor</label>
+        <select id="so_sup"><option value="">-- Select --</option>
+          <option>ASHOKRAJ</option><option>SUGAVANAN</option><option>ASHOK KUMAR</option>
+          <option>RAGUPATHY</option><option>SATHISH KUMAR</option><option>VENKATESH</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Pro Code</label><input type="text" id="so_procode" placeholder="e.g. 15"></div>
+      <div class="form-group"><label>Farmer Name</label><input type="text" id="so_proname" placeholder="Farmer name"></div>
+      <div class="form-group"><label>Medicine</label>
+        <select id="so_medicine" onchange="autoFill('so')"><option value="">-- Select --</option></select>
+      </div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="so_qty" oninput="calcAmt('so')" placeholder="0"></div>
+      <div class="form-group"><label>Rate ₹</label><input type="number" id="so_rate" oninput="calcAmt('so')" placeholder="0"></div>
+      <div class="form-group"><label>Amount ₹</label><input type="number" id="so_amt" readonly></div>
+      <div class="form-group"><label>Notes</label><input type="text" id="so_notes" placeholder="Optional"></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="addSociety()">➕ Add</button>
+      <button class="btn btn-amber" onclick="clearForm('so')">🔄 Clear</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      <div class="card-title-left">📋 Society Sales Log</div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-outline btn-sm" onclick="exportTableCSV('society')">📤 Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAll('society')">🗑 Clear All</button>
+      </div>
+    </div>
+    <div class="action-row"><span class="stat-label" id="socCount"></span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Date</th><th>Centre</th><th>Line</th><th>Supervisor</th><th>Farmer</th><th>Medicine</th><th>Qty</th><th>Rate</th><th>Amt</th><th>Del</th></tr></thead>
+      <tbody id="socLogTable"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- STOCK REPORT -->
+<div id="tab-stock" class="tab-content">
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">📦 Stock Balance Report</div></div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Medicine</th><th>P.Qty</th><th>P.Amt ₹</th>
+        <th>Sup Qty</th><th>Sup Amt ₹</th>
+        <th>Soc Qty</th><th>Soc Amt ₹</th>
+        <th>GKD Stock</th><th>Sup Stock</th>
+        <th>P→S Diff</th><th>S→Soc Diff</th>
+      </tr></thead>
+      <tbody id="stockTable"></tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><div class="card-title-left">💰 Financial Summary</div></div>
+    <div id="financialSummary" class="stats-grid" style="margin:0;"></div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<!-- ========== IMPORT MODAL ========== -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-title">📥 Import from Excel</div>
+
+    <div class="step-box">
+      <b>Sheet names recognised:</b> <code>1.Purchase Ledger</code>, <code>2.Supervisor Ledger</code>, <code>3.Society sales</code><br>
+      உங்க <b>COW_MEDICINE_2026.xlsx</b> directly upload பண்ணலாம் — app auto-detect பண்ணும்!
+    </div>
+
+    <div class="import-drop" id="importDrop" onclick="document.getElementById('importFile').click()">
+      <input type="file" id="importFile" accept=".xlsx,.xls" onchange="handleImportFile(this)">
+      <div class="drop-icon">📂</div>
+      <p><strong>Click to browse</strong> or drag & drop Excel file</p>
+      <p style="font-size:11px;margin-top:4px;color:#999;">.xlsx / .xls supported</p>
+    </div>
+
+    <div id="importPreview" style="display:none;">
+      <div class="import-preview" id="importPreviewContent"></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--text2);">
+        ⚠️ Import பண்ணினா existing data-la <b>add</b> ஆகும் (replace இல்ல). Duplicates avoid பண்ண முன்னாடி Clear All பண்ணுங்க.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn btn-purple" id="doImportBtn" onclick="doImport()" style="display:none;">✅ Import Data</button>
+      <button class="btn btn-amber" onclick="closeImportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SYNC / CONFIG MODAL ========== -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal">
+    <div class="modal-title">⚙️ Google Sheets Sync Configuration</div>
+
+    <div class="config-section">
+      <h4>📋 Step 1 — Apps Script Setup</h4>
+      <div class="step-box"><b>1.</b> Google Sheets திற → Extensions → Apps Script</div>
+      <div class="step-box"><b>2.</b> கீழே இருக்க Code-ஐ paste பண்ணு → Save → Deploy → New Deployment</div>
+      <div class="step-box"><b>3.</b> Type: <b>Web App</b> | Execute as: <b>Me</b> | Who has access: <b>Anyone</b></div>
+      <div class="step-box"><b>4.</b> Deploy பண்ணி URL copy பண்ணு → Step 2-la paste பண்ணு</div>
+    </div>
+
+    <div class="config-section">
+      <h4>🔗 Step 2 — Paste Web App URL</h4>
+      <div class="config-row">
+        <input type="text" id="sheetsUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <button class="btn btn-primary btn-sm" onclick="saveSheetsUrl()">💾 Save</button>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h4>📜 Apps Script Code — Copy பண்ணி paste பண்ணு</h4>
+      <div style="background:#1a2e1a;border-radius:8px;padding:12px;overflow-x:auto;max-height:280px;overflow-y:auto;">
+        <pre id="scriptCodePre" style="color:#7fffb0;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:pre;line-height:1.6;"></pre>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyScript()">📋 Copy Script</button>
+    </div>
+
+    <button class="btn btn-amber btn-sm" onclick="closeSyncModal()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ======= MEDICINES MASTER =======
+const MEDICINES = [
+  { name:"Keedo+ குடற்புழு நீக்கம் - 90g",  purchaseRate:160, supervisorRate:200 },
+  { name:"Herbotick உண்ணி மருந்து - 50g",    purchaseRate:69,  supervisorRate:85  },
+  { name:"Enteroherb கழிச்சல் - 90g",         purchaseRate:193, supervisorRate:245 },
+  { name:"Herbolact மடி நோய் -180g",          purchaseRate:321, supervisorRate:400 },
+  { name:"Rumifi_H வயிறு உப்புசம் - 90g",     purchaseRate:200, supervisorRate:250 },
+];
+
+// ======= LOCAL STORAGE =======
+const LS = {
+  get: k => JSON.parse(localStorage.getItem('gkdm_'+k)||'[]'),
+  set: (k,v) => localStorage.setItem('gkdm_'+k,JSON.stringify(v)),
+  getStr: k => localStorage.getItem('gkdm_'+k)||'',
+  setStr: (k,v) => localStorage.setItem('gkdm_'+k,v),
+};
+
+let purchase = LS.get('purchase');
+let supervisor = LS.get('supervisor');
+let society = LS.get('society');
+
+// pending import buffer
+let importBuffer = { purchase:[], supervisor:[], society:[] };
+
+// ======= APPS SCRIPT CODE =======
+const APPS_SCRIPT_CODE = `// GKD Cow Medicine — Apps Script Backend
+// Paste this in Google Apps Script and deploy as Web App
+
+const SS_ID = ''; // உங்க Spreadsheet ID paste பண்ணுங்க
+// URL: https://docs.google.com/spreadsheets/d/[THIS_ID]/edit
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action || 'sync';
+    if (action === 'sync') return syncData(e);
+    return ContentService.createTextOutput('{"status":"unknown_action"}')
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error',msg:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function syncData(e) {
+  const ss = SS_ID 
+    ? SpreadsheetApp.openById(SS_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
+
+  const purchase   = JSON.parse(e.parameter.purchase   || '[]');
+  const supervisor = JSON.parse(e.parameter.supervisor || '[]');
+  const society    = JSON.parse(e.parameter.society    || '[]');
+
+  writeSheet(ss, '1.Purchase Ledger',   purchaseHeaders(),   purchase.map(purchaseRow));
+  writeSheet(ss, '2.Supervisor Ledger', supervisorHeaders(), supervisor.map(supervisorRow));
+  writeSheet(ss, '3.Society sales',     societyHeaders(),    society.map(societyRow));
+
+  // Dashboard summary
+  writeDashboard(ss, purchase, supervisor, society);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({status:'ok', synced: new Date().toISOString()}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function writeSheet(ss, name, headers, rows) {
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  sh.clearContents();
+  if (rows.length === 0) {
+    sh.getRange(1,1,1,headers.length).setValues([headers]);
+    return;
+  }
+  sh.getRange(1,1,1,headers.length).setValues([headers]);
+  sh.getRange(2,1,rows.length,headers.length).setValues(rows);
+  sh.getRange(1,1,1,headers.length)
+    .setBackground('#1a7a4a').setFontColor('#ffffff').setFontWeight('bold');
+  sh.setFrozenRows(1);
+}
+
+function writeDashboard(ss, purchase, supervisor, society) {
+  const medicines = [
+    'Keedo+ குடற்புழு நீக்கம் - 90g',
+    'Herbotick உண்ணி மருந்து - 50g',
+    'Enteroherb கழிச்சல் - 90g',
+    'Herbolact மடி நோய் -180g',
+    'Rumifi_H வயிறு உப்புசம் - 90g'
+  ];
+
+  let sh = ss.getSheetByName('Dashboard');
+  if (!sh) sh = ss.insertSheet('Dashboard');
+  sh.clearContents();
+
+  const headers = ['Medicine','P.Qty','P.Amt','Sup.Qty','Sup.Amt','Soc.Qty','Soc.Amt','GKD Stock','Sup Stock','P→S Diff','S→Soc Diff'];
+  sh.getRange(1,1,1,headers.length).setValues([headers])
+    .setBackground('#0f4f2a').setFontColor('#ffffff').setFontWeight('bold');
+
+  const rows = medicines.map(m => {
+    const pQty = purchase.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.qty||0),0);
+    const pAmt = purchase.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.amt||0),0);
+    const sQty = supervisor.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.qty||0),0);
+    const sAmt = supervisor.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.amt||0),0);
+    const soQty= society.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.qty||0),0);
+    const soAmt= society.filter(r=>r.medicine===m).reduce((a,r)=>a+(+r.amt||0),0);
+    return [m, pQty, pAmt, sQty, sAmt, soQty, soAmt, pQty-sQty, sQty-soQty, pQty-sQty, sQty-soQty];
+  });
+  if (rows.length) sh.getRange(2,1,rows.length,headers.length).setValues(rows);
+  sh.setFrozenRows(1);
+}
+
+// --- Row mappers ---
+function purchaseHeaders()   { return ['S.No','Date','Medicine','Brand','Qty','Rate','Amount','Remarks']; }
+function purchaseRow(r,i)    { return [i+1, r.date, r.medicine, r.brand||'Animeta', +r.qty||0, +r.rate||0, +r.amt||0, r.remarks||'']; }
+
+function supervisorHeaders() { return ['S.No','Date','Supervisor','Medicine','Qty','Rate','Amount']; }
+function supervisorRow(r,i)  { return [i+1, r.date, r.sup, r.medicine, +r.qty||0, +r.rate||0, +r.amt||0]; }
+
+function societyHeaders()    { return ['S.No','Date','Centre No','Centre Name','Line','Supervisor','Pro Code','Concat','Farmer','Medicine','Rate','Qty','Amount','Notes']; }
+function societyRow(r,i)     { return [i+1, r.date, r.centre_no||'', r.centre_name||'', r.line||'', r.sup||'', r.procode||'', (r.centre_no&&r.procode?r.centre_no+'-'+r.procode:''), r.proname||'', r.medicine, +r.rate||0, +r.qty||0, +r.amt||0, r.notes||'']; }
+`;
+
+// ======= INIT =======
+function init() {
+  ['p_medicine','s_medicine','so_medicine'].forEach(id => {
+    const sel = document.getElementById(id);
+    MEDICINES.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name; opt.textContent = m.name;
+      sel.appendChild(opt);
+    });
+  });
+  const today = new Date().toISOString().split('T')[0];
+  ['p_date','s_date','so_date'].forEach(id => document.getElementById(id).value = today);
+  document.getElementById('sheetsUrl').value = LS.getStr('sheetsUrl');
+  document.getElementById('scriptCodePre').textContent = APPS_SCRIPT_CODE;
+  setupDragDrop();
+  renderAll();
+}
+
+// ======= TAB =======
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  el.classList.add('active');
+  renderAll();
+}
+
+// ======= AUTO FILL =======
+const rateMap = { p:'purchaseRate', s:'supervisorRate', so:'supervisorRate' };
+const medField = { p:'p_medicine', s:'s_medicine', so:'so_medicine' };
+const rateField = { p:'p_rate', s:'s_rate', so:'so_rate' };
+const amtField  = { p:'p_amt',  s:'s_amt',  so:'so_amt'  };
+const qtyField  = { p:'p_qty',  s:'s_qty',  so:'so_qty'  };
+
+function autoFill(pfx) {
+  const m = MEDICINES.find(x => x.name === document.getElementById(medField[pfx]).value);
+  if(m) { document.getElementById(rateField[pfx]).value = m[rateMap[pfx]]; calcAmt(pfx); }
+}
+function calcAmt(pfx) {
+  const q = +document.getElementById(qtyField[pfx]).value||0;
+  const r = +document.getElementById(rateField[pfx]).value||0;
+  document.getElementById(amtField[pfx]).value = q*r;
+}
+
+// ======= ADD =======
+function addPurchase() {
+  const d = v('p_date'), m = v('p_medicine'), b = v('p_brand'), q = +v('p_qty'), r = +v('p_rate');
+  if(!d||!m||!q||!r) { toast('⚠️ Date, Medicine, Qty, Rate mandatory!','error'); return; }
+  purchase.push({ id:Date.now(), date:d, medicine:m, brand:b, qty:q, rate:r, amt:q*r, remarks:v('p_remarks') });
+  LS.set('purchase',purchase); renderPurchase(); clearForm('p');
+  toast('✅ Purchase entry added!','success');
+}
+
+function addSupervisor() {
+  const d=v('s_date'), sup=v('s_sup'), m=v('s_medicine'), q=+v('s_qty'), r=+v('s_rate');
+  if(!d||!sup||!m||!q||!r) { toast('⚠️ எல்லா fields mandatory!','error'); return; }
+  supervisor.push({ id:Date.now(), date:d, sup, medicine:m, qty:q, rate:r, amt:q*r });
+  LS.set('supervisor',supervisor); renderSupervisor(); clearForm('s');
+  toast('✅ Supervisor entry added!','success');
+}
+
+function addSociety() {
+  const d=v('so_date'), m=v('so_medicine'), q=+v('so_qty'), r=+v('so_rate');
+  if(!d||!m||!q) { toast('⚠️ Date, Medicine, Qty mandatory!','error'); return; }
+  const cn=v('so_centre_no'), pc=v('so_procode');
+  society.push({ id:Date.now(), date:d, centre_no:cn, centre_name:v('so_centre_name'),
+    line:v('so_line'), sup:v('so_sup'), procode:pc, proname:v('so_proname'),
+    medicine:m, qty:q, rate:r, amt:q*r, notes:v('so_notes'),
+    concat: cn&&pc ? cn+'-'+pc : '' });
+  LS.set('society',society); renderSociety(); clearForm('so');
+  toast('✅ Society entry added!','success');
+}
+
+function v(id) { return document.getElementById(id).value.trim(); }
+
+// ======= DELETE =======
+function delRow(type, id) {
+  if(type==='purchase')   { purchase=purchase.filter(x=>x.id!==id);     LS.set('purchase',purchase);   renderPurchase(); }
+  if(type==='supervisor') { supervisor=supervisor.filter(x=>x.id!==id); LS.set('supervisor',supervisor); renderSupervisor(); }
+  if(type==='society')    { society=society.filter(x=>x.id!==id);       LS.set('society',society);     renderSociety(); }
+}
+
+function clearAll(type) {
+  if(!confirm('நிச்சயமா delete பண்ணணுமா?')) return;
+  if(type==='purchase')   { purchase=[];   LS.set('purchase',[]);   renderPurchase(); }
+  if(type==='supervisor') { supervisor=[]; LS.set('supervisor',[]); renderSupervisor(); }
+  if(type==='society')    { society=[];    LS.set('society',[]);    renderSociety(); }
+  toast('🗑 Cleared!','success');
+}
+
+// ======= CLEAR FORM =======
+function clearForm(pfx) {
+  const map = {
+    p:  ['p_medicine','p_qty','p_rate','p_amt','p_remarks'],
+    s:  ['s_sup','s_medicine','s_qty','s_rate','s_amt'],
+    so: ['so_centre_no','so_centre_name','so_procode','so_proname','so_medicine','so_qty','so_rate','so_amt','so_notes'],
+  };
+  map[pfx].forEach(id => document.getElementById(id).value = '');
+  if(pfx==='p') document.getElementById('p_brand').value='Animeta';
+}
+
+// ======= RENDER =======
+const rupee = n => '₹'+Number(n||0).toLocaleString('en-IN');
+const qfmt  = n => Number(n||0).toLocaleString('en-IN');
+
+function renderPurchase() {
+  const tb = document.getElementById('purchaseTable');
+  document.getElementById('purchaseCount').textContent = `${purchase.length} entries | Total: ${rupee(purchase.reduce((a,r)=>a+r.amt,0))}`;
+  tb.innerHTML = purchase.length ? purchase.map((r,i) => `
+    <tr><td>${i+1}</td><td>${r.date}</td><td>${r.medicine}</td><td>${r.brand||'Animeta'}</td>
+    <td class="mono">${qfmt(r.qty)}</td><td class="mono">${rupee(r.rate)}</td><td class="mono">${rupee(r.amt)}</td>
+    <td>${r.remarks||'-'}</td><td><button class="btn btn-danger btn-sm" onclick="delRow('purchase',${r.id})">🗑</button></td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty-msg">No entries yet — manually enter or import from Excel</td></tr>`;
+}
+
+function renderSupervisor() {
+  const tb = document.getElementById('supLogTable');
+  document.getElementById('supCount').textContent = `${supervisor.length} entries | Total: ${rupee(supervisor.reduce((a,r)=>a+r.amt,0))}`;
+  tb.innerHTML = supervisor.length ? supervisor.map((r,i) => `
+    <tr><td>${i+1}</td><td>${r.date}</td><td><span class="badge badge-green">${r.sup}</span></td>
+    <td>${r.medicine}</td><td class="mono">${qfmt(r.qty)}</td><td class="mono">${rupee(r.rate)}</td>
+    <td class="mono">${rupee(r.amt)}</td><td><button class="btn btn-danger btn-sm" onclick="delRow('supervisor',${r.id})">🗑</button></td></tr>`).join('')
+    : `<tr><td colspan="8" class="empty-msg">No entries yet</td></tr>`;
+}
+
+function renderSociety() {
+  const tb = document.getElementById('socLogTable');
+  document.getElementById('socCount').textContent = `${society.length} entries | Total: ${rupee(society.reduce((a,r)=>a+r.amt,0))}`;
+  tb.innerHTML = society.length ? society.map((r,i) => `
+    <tr><td>${i+1}</td><td>${r.date}</td><td>${r.centre_no||''} ${r.centre_name||''}</td>
+    <td><span class="badge badge-amber">${r.line||''}</span></td><td>${r.sup||'-'}</td><td>${r.proname||'-'}</td>
+    <td>${r.medicine}</td><td class="mono">${qfmt(r.qty)}</td><td class="mono">${rupee(r.rate)}</td>
+    <td class="mono">${rupee(r.amt)}</td><td><button class="btn btn-danger btn-sm" onclick="delRow('society',${r.id})">🗑</button></td></tr>`).join('')
+    : `<tr><td colspan="11" class="empty-msg">No entries yet</td></tr>`;
+}
+
+function renderDashboard() {
+  const tPQ=purchase.reduce((a,r)=>a+r.qty,0), tPA=purchase.reduce((a,r)=>a+r.amt,0);
+  const tSQ=supervisor.reduce((a,r)=>a+r.qty,0), tSA=supervisor.reduce((a,r)=>a+r.amt,0);
+  const tSoQ=society.reduce((a,r)=>a+r.qty,0), tSoA=society.reduce((a,r)=>a+r.amt,0);
+  const bal=tPQ-tSQ;
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-box green"><div class="stat-label">Purchase Total</div><div class="stat-value">${rupee(tPA)}</div><div class="stat-sub">${qfmt(tPQ)} units</div></div>
+    <div class="stat-box amber"><div class="stat-label">Supervisor Dist.</div><div class="stat-value">${rupee(tSA)}</div><div class="stat-sub">${qfmt(tSQ)} units</div></div>
+    <div class="stat-box blue"><div class="stat-label">Society Sales</div><div class="stat-value">${rupee(tSoA)}</div><div class="stat-sub">${qfmt(tSoQ)} units</div></div>
+    <div class="stat-box ${bal<0?'red':'green'}"><div class="stat-label">GKD Stock Balance</div><div class="stat-value">${qfmt(bal)}</div><div class="stat-sub">Purchase − Supervisor</div></div>`;
+
+  document.getElementById('dashTable').innerHTML = MEDICINES.map(m => {
+    const pQ=sum(purchase,m,'qty'), pA=sum(purchase,m,'amt');
+    const sQ=sum(supervisor,m,'qty'), sA=sum(supervisor,m,'amt');
+    const soQ=sum(society,m,'qty'), soA=sum(society,m,'amt');
+    const d1=pQ-sQ, d2=sQ-soQ;
+    return `<tr><td>${m.name}</td>
+      <td class="mono">${qfmt(pQ)}</td><td class="mono">${qfmt(sQ)}</td><td class="mono">${qfmt(soQ)}</td>
+      <td class="mono">${rupee(pA)}</td><td class="mono">${rupee(sA)}</td><td class="mono">${rupee(soA)}</td>
+      <td class="mono ${d1>=0?'diff-positive':'diff-negative'}">${d1>=0?'+':''}${d1}</td>
+      <td class="mono ${d2>=0?'diff-positive':'diff-negative'}">${d2>=0?'+':''}${d2}</td></tr>`;
+  }).join('');
+
+  const sups=[...new Set(supervisor.map(r=>r.sup))];
+  document.getElementById('supSumTable').innerHTML = sups.length ? sups.map(sup=>{
+    const rows=supervisor.filter(r=>r.sup===sup);
+    const tQ=rows.reduce((a,r)=>a+r.qty,0), tA=rows.reduce((a,r)=>a+r.amt,0);
+    const meds=[...new Set(rows.map(r=>r.medicine.split(' ')[0]))].join(', ');
+    return `<tr><td><span class="badge badge-green">${sup}</span></td><td class="mono">${qfmt(tQ)}</td><td class="mono">${rupee(tA)}</td><td style="font-size:11px;color:var(--text2);">${meds}</td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty-msg">No supervisor data</td></tr>`;
+}
+
+function renderStock() {
+  document.getElementById('stockTable').innerHTML = MEDICINES.map(m => {
+    const pQ=sum(purchase,m,'qty'), pA=sum(purchase,m,'amt');
+    const sQ=sum(supervisor,m,'qty'), sA=sum(supervisor,m,'amt');
+    const soQ=sum(society,m,'qty'), soA=sum(society,m,'amt');
+    const gs=pQ-sQ, ss2=sQ-soQ, d1=pQ-sQ, d2=sQ-soQ;
+    return `<tr><td>${m.name}</td>
+      <td class="mono">${qfmt(pQ)}</td><td class="mono">${rupee(pA)}</td>
+      <td class="mono">${qfmt(sQ)}</td><td class="mono">${rupee(sA)}</td>
+      <td class="mono">${qfmt(soQ)}</td><td class="mono">${rupee(soA)}</td>
+      <td class="mono ${gs>=0?'diff-positive':'diff-negative'}">${qfmt(gs)}</td>
+      <td class="mono ${ss2>=0?'diff-positive':'diff-negative'}">${qfmt(ss2)}</td>
+      <td class="mono ${d1>=0?'diff-positive':'diff-negative'}">${d1>=0?'+':''}${d1}</td>
+      <td class="mono ${d2>=0?'diff-positive':'diff-negative'}">${d2>=0?'+':''}${d2}</td></tr>`;
+  }).join('');
+
+  const tP=purchase.reduce((a,r)=>a+r.amt,0);
+  const tS=supervisor.reduce((a,r)=>a+r.amt,0);
+  const tSo=society.reduce((a,r)=>a+r.amt,0);
+  const profit=tS-tP;
+  document.getElementById('financialSummary').innerHTML = `
+    <div class="stat-box green"><div class="stat-label">Purchase Cost</div><div class="stat-value">${rupee(tP)}</div></div>
+    <div class="stat-box amber"><div class="stat-label">Supervisor Sales</div><div class="stat-value">${rupee(tS)}</div></div>
+    <div class="stat-box blue"><div class="stat-label">Society Sales</div><div class="stat-value">${rupee(tSo)}</div></div>
+    <div class="stat-box ${profit>=0?'green':'red'}"><div class="stat-label">Margin (P→S)</div><div class="stat-value">${rupee(profit)}</div><div class="stat-sub">${profit>=0?'📈 Profit':'📉 Loss'}</div></div>`;
+}
+
+function sum(arr, m, field) {
+  return arr.filter(r=>r.medicine===m.name).reduce((a,r)=>a+(+r[field]||0),0);
+}
+
+function renderAll() {
+  renderPurchase(); renderSupervisor(); renderSociety(); renderDashboard(); renderStock();
+}
+
+// ======= IMPORT FROM EXCEL =======
+let importedData = null;
+
+function openImportModal() {
+  importedData = null;
+  document.getElementById('importPreview').style.display='none';
+  document.getElementById('doImportBtn').style.display='none';
+  document.getElementById('importFile').value='';
+  document.getElementById('importModal').classList.add('show');
+}
+function closeImportModal() { document.getElementById('importModal').classList.remove('show'); }
+
+function setupDragDrop() {
+  const drop = document.getElementById('importDrop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if(file) processExcelFile(file);
+  });
+}
+
+function handleImportFile(input) {
+  if(input.files[0]) processExcelFile(input.files[0]);
+}
+
+function processExcelFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type:'binary', cellDates:true });
+      const parsed = { purchase:[], supervisor:[], society:[] };
+      let preview = '';
+
+      // -- Purchase Ledger --
+      const pSheet = wb.Sheets['1.Purchase Ledger'] || wb.Sheets['Purchase Ledger'] || wb.Sheets['1.Purchase Log'];
+      if(pSheet) {
+        const rows = XLSX.utils.sheet_to_json(pSheet, {defval:''});
+        rows.forEach((r,i) => {
+          const qty  = parseFloat(r['Qty'] || r[' Qty'] || 0);
+          const rate = parseFloat(r['Price/Unit(₹)'] || r['Rate'] || 0);
+          const med  = r['Medicine Peyar'] || r['Medicine'] || '';
+          if(!med || !qty) return;
+          parsed.purchase.push({
+            id: Date.now()+i, date: fmtDate(r['Date']),
+            medicine: med.trim(), brand: r['Brand']||'Animeta',
+            qty, rate, amt: qty*rate, remarks: r['Remarks']||''
+          });
+        });
+        preview += `<div class="import-row"><span>📦 Purchase Ledger</span><span class="import-count">${parsed.purchase.length} rows</span></div>`;
+      }
+
+      // -- Supervisor Ledger --
+      const sSheet = wb.Sheets['2.Supervisor Ledger'] || wb.Sheets['Supervisor Ledger'] || wb.Sheets['2.Supervisor Log'];
+      if(sSheet) {
+        const rows = XLSX.utils.sheet_to_json(sSheet, {defval:''});
+        rows.forEach((r,i) => {
+          const qty  = parseFloat(r['Qty'] || r[' Qty'] || 0);
+          const rate = parseFloat(r['Price/Unit(₹)'] || r['Rate'] || 0);
+          const med  = r['Medicine Peyar'] || r['Medicine'] || '';
+          const sup  = r['Supervisor Peyar'] || r['Supervisor'] || '';
+          if(!med || !qty) return;
+          parsed.supervisor.push({
+            id: Date.now()+i+10000, date: fmtDate(r['Date']),
+            sup: sup.trim(), medicine: med.trim(), qty, rate, amt: qty*rate
+          });
+        });
+        preview += `<div class="import-row"><span>👨‍💼 Supervisor Ledger</span><span class="import-count">${parsed.supervisor.length} rows</span></div>`;
+      }
+
+      // -- Society Sales --
+      const soSheet = wb.Sheets['3.Society sales'] || wb.Sheets['Society sales'] || wb.Sheets['2.Supervisor Log'];
+      if(soSheet && soSheet !== sSheet) {
+        const rows = XLSX.utils.sheet_to_json(soSheet, {defval:''});
+        rows.forEach((r,i) => {
+          const qty  = parseFloat(r['QTY'] || r['Qty'] || 0);
+          const rate = parseFloat(r['RATE PER PIECE'] || r['Rate'] || 0);
+          const med  = r['FEEDS TYPE'] || r['Medicine'] || '';
+          if(!med || !qty) return;
+          const cn = String(r['CENTRE  NO']||r['Centre No']||'');
+          const pc = String(r['PRO  CODE']||r['Pro Code']||'');
+          parsed.society.push({
+            id: Date.now()+i+20000, date: fmtDate(r['DATE']||r['Date']),
+            centre_no: cn, centre_name: r['CENTRE  NAME']||r['Centre Name']||'',
+            line: r['LINE']||r['Line']||'', sup: r['SUPERVISOR']||r['Supervisor']||'',
+            procode: pc, proname: r['PRO NAME']||r['Farmer']||'',
+            medicine: med.trim(), qty, rate, amt: qty*rate,
+            notes: r['Notes']||'', concat: cn&&pc?cn+'-'+pc:''
+          });
+        });
+        preview += `<div class="import-row"><span>🏘️ Society Sales</span><span class="import-count">${parsed.society.length} rows</span></div>`;
+      }
+
+      if(!parsed.purchase.length && !parsed.supervisor.length && !parsed.society.length) {
+        toast('⚠️ No data found! Sheet names சரியா இருக்கா? (1.Purchase Ledger, 2.Supervisor Ledger, 3.Society sales)','error');
+        return;
+      }
+
+      importedData = parsed;
+      document.getElementById('importPreviewContent').innerHTML =
+        `<div style="font-weight:700;color:var(--green);margin-bottom:8px;">📊 Found:</div>${preview}`;
+      document.getElementById('importPreview').style.display='block';
+      document.getElementById('doImportBtn').style.display='inline-block';
+      toast(`✅ Excel read complete! ${parsed.purchase.length+parsed.supervisor.length+parsed.society.length} total rows found.`,'success');
+    } catch(err) {
+      toast('❌ Excel read error: '+err.message,'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function doImport() {
+  if(!importedData) return;
+  purchase   = [...purchase,   ...importedData.purchase];
+  supervisor = [...supervisor, ...importedData.supervisor];
+  society    = [...society,    ...importedData.society];
+  LS.set('purchase',purchase);
+  LS.set('supervisor',supervisor);
+  LS.set('society',society);
+  closeImportModal();
+  renderAll();
+  toast(`🎉 Import complete! P:${importedData.purchase.length} S:${importedData.supervisor.length} Soc:${importedData.society.length} rows added.`,'success');
+  importedData = null;
+}
+
+function fmtDate(val) {
+  if(!val) return '';
+  if(val instanceof Date) return val.toISOString().split('T')[0];
+  if(typeof val === 'number') {
+    // Excel serial date
+    const d = new Date((val - 25569)*86400*1000);
+    return d.toISOString().split('T')[0];
+  }
+  const s = String(val);
+  // dd-MM-yyyy
+  if(/^\d{2}-\d{2}-\d{4}$/.test(s)) {
+    const [dd,mm,yyyy] = s.split('-');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return s;
+}
+
+// ======= EXPORT CSV =======
+function exportTableCSV(type) {
+  let data, headers, filename;
+  if(type==='purchase') {
+    headers=['S.No','Date','Medicine','Brand','Qty','Rate','Amount','Remarks'];
+    data=purchase.map((r,i)=>[i+1,r.date,r.medicine,r.brand,r.qty,r.rate,r.amt,r.remarks||'']);
+    filename='GKD_Purchase_'+today()+'.csv';
+  } else if(type==='supervisor') {
+    headers=['S.No','Date','Supervisor','Medicine','Qty','Rate','Amount'];
+    data=supervisor.map((r,i)=>[i+1,r.date,r.sup,r.medicine,r.qty,r.rate,r.amt]);
+    filename='GKD_Supervisor_'+today()+'.csv';
+  } else {
+    headers=['S.No','Date','Centre No','Centre Name','Line','Supervisor','Pro Code','Concat','Farmer','Medicine','Qty','Rate','Amount','Notes'];
+    data=society.map((r,i)=>[i+1,r.date,r.centre_no,r.centre_name,r.line,r.sup,r.procode,r.concat,r.proname,r.medicine,r.qty,r.rate,r.amt,r.notes||'']);
+    filename='GKD_Society_'+today()+'.csv';
+  }
+  const csv=[headers,...data].map(row=>row.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlFile(csv,'text/csv',filename);
+  toast('📤 CSV exported!','success');
+}
+
+function exportJSON() {
+  const backup={ purchase, supervisor, society, exportedAt: new Date().toISOString() };
+  dlFile(JSON.stringify(backup,null,2),'application/json','GKD_Backup_'+today()+'.json');
+  toast('\uD83D\uDCBE JSON backup downloaded!','success');
+}
+
+function importJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.purchase && !data.supervisor && !data.society) {
+        toast('\u274C தவறான backup file! Valid GKD backup file தேர்ந்தெடுக்கவும்.', 'error');
+        return;
+      }
+      const pCount   = (data.purchase   || []).length;
+      const supCount = (data.supervisor || []).length;
+      const socCount = (data.society    || []).length;
+      const exportDate = data.exportedAt ? new Date(data.exportedAt).toLocaleString('ta-IN') : 'தெரியாத தேதி';
+      const confirmed = confirm(
+        'Backup Restore Confirmation\n\n' +
+        'Exported: ' + exportDate + '\n\n' +
+        'இந்த backup-ல் உள்ளது:\n' +
+        '  Purchase  : ' + pCount + ' records\n' +
+        '  Supervisor: ' + supCount + ' records\n' +
+        '  Society   : ' + socCount + ' records\n\n' +
+        'தற்போதைய data அனைத்தும் மாற்றப்படும்! தொடரவா?'
+      );
+      if (!confirmed) { input.value=''; return; }
+      purchase   = data.purchase   || [];
+      supervisor = data.supervisor || [];
+      society    = data.society    || [];
+      LS.set('purchase',   purchase);
+      LS.set('supervisor', supervisor);
+      LS.set('society',    society);
+      renderAll();
+      toast('\u2705 Restore வெற்றி! Purchase:' + pCount + ', Supervisor:' + supCount + ', Society:' + socCount + ' records ஏற்றப்பட்டது.', 'success');
+      input.value = '';
+    } catch(err) {
+      toast('\u274C File படிக்க முடியவில்லை. Valid JSON file தேர்ந்தெடுக்கவும்.', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function dlFile(content, type, name) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name; a.click();
+}
+
+function today() { return new Date().toISOString().split('T')[0].replace(/-/g,''); }
+
+// ======= GOOGLE SHEETS SYNC =======
+function openSyncModal()  { document.getElementById('syncModal').classList.add('show'); }
+function closeSyncModal() { document.getElementById('syncModal').classList.remove('show'); }
+function saveSheetsUrl()  {
+  LS.setStr('sheetsUrl', document.getElementById('sheetsUrl').value.trim());
+  toast('✅ URL saved!','success');
+}
+
+async function syncToSheets() {
+  const url = LS.getStr('sheetsUrl');
+  if(!url) { toast('⚠️ Sheets URL config பண்ணுங்க!','error'); openSyncModal(); return; }
+  document.getElementById('syncStatus').textContent = '⏳ Syncing...';
+  const params = new URLSearchParams({
+    action:'sync',
+    purchase: JSON.stringify(purchase),
+    supervisor: JSON.stringify(supervisor),
+    society: JSON.stringify(society),
+    syncedAt: new Date().toISOString()
+  });
+  try {
+    await fetch(`${url}?${params}`, { method:'GET', mode:'no-cors' });
+    const t = new Date().toLocaleTimeString();
+    document.getElementById('syncStatus').textContent = '✅ '+t;
+    toast('☁️ Google Sheets sync complete!','success');
+  } catch(e) {
+    document.getElementById('syncStatus').textContent = '❌ Failed';
+    toast('❌ Sync failed: '+e.message,'error');
+  }
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>toast('📋 Script copied!','success'));
+}
+
+// ======= TOAST =======
+function toast(msg, type='success') {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast ${type} show`;
+  setTimeout(()=>el.classList.remove('show'),3500);
+}
+
+// ======= CLOSE MODALS =======
+['importModal','syncModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if(e.target===this) this.classList.remove('show');
+  });
+});
+
+init();
+</script>
+</body>
+</html>

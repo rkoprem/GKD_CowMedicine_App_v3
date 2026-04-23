@@ -184,10 +184,7 @@ code { background:#1a2e1a; color:#7fffb0; padding:2px 6px; border-radius:4px; fo
     <span class="sync-status" id="syncStatus"></span>
     <button class="sync-btn purple" onclick="openImportModal()">📥 Import Excel</button>
     <button class="sync-btn" onclick="exportJSON()">💾 Backup</button>
-    <label class="sync-btn" style="background:#e67e22;cursor:pointer;position:relative;overflow:hidden;">
-      📂 Restore
-      <input type="file" accept=".json" onchange="importJSON(this)" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;">
-    </label>
+    <button class="sync-btn" style="background:#e67e22;" onclick="openRestoreModal()">📂 Restore</button>
     <button class="sync-btn" onclick="openSyncModal()">⚙️ Sheets Config</button>
     <button class="sync-btn" onclick="syncToSheets()">☁️ Sync Now</button>
   </div>
@@ -433,6 +430,24 @@ code { background:#1a2e1a; color:#7fffb0; padding:2px 6px; border-radius:4px; fo
     </div>
 
     <button class="btn btn-amber btn-sm" onclick="closeSyncModal()">Close</button>
+  </div>
+</div>
+
+<!-- RESTORE MODAL -->
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal">
+    <div class="modal-title">📂 Backup Restore</div>
+    <div class="config-section">
+      <h4>📋 எப்படி செய்வது:</h4>
+      <div class="step-box"><b>1.</b> Files app-ல் GKD_Backup JSON file-ஐ திற</div>
+      <div class="step-box"><b>2.</b> முழு content-ஐ Select All → Copy பண்ணு</div>
+      <div class="step-box"><b>3.</b> கீழே உள்ள box-ல் Paste பண்ணு → Restore பண்ணு</div>
+    </div>
+    <textarea id="restorePasteBox" rows="8" placeholder='{"purchase":[...],"supervisor":[...],"society":[...]}' style="width:100%;font-size:12px;font-family:monospace;border:2px solid #e67e22;border-radius:8px;padding:10px;box-sizing:border-box;resize:vertical;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary" style="background:#e67e22;flex:1;" onclick="restoreFromPaste()">✅ Restore பண்ணு</button>
+      <button class="btn btn-amber btn-sm" onclick="closeRestoreModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -932,45 +947,43 @@ function exportJSON() {
   toast('\uD83D\uDCBE JSON backup downloaded!','success');
 }
 
-function importJSON(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!data.purchase && !data.supervisor && !data.society) {
-        toast('\u274C தவறான backup file! Valid GKD backup file தேர்ந்தெடுக்கவும்.', 'error');
-        return;
-      }
-      const pCount   = (data.purchase   || []).length;
-      const supCount = (data.supervisor || []).length;
-      const socCount = (data.society    || []).length;
-      const exportDate = data.exportedAt ? new Date(data.exportedAt).toLocaleString('ta-IN') : 'தெரியாத தேதி';
-      const confirmed = confirm(
-        'Backup Restore Confirmation\n\n' +
-        'Exported: ' + exportDate + '\n\n' +
-        'இந்த backup-ல் உள்ளது:\n' +
-        '  Purchase  : ' + pCount + ' records\n' +
-        '  Supervisor: ' + supCount + ' records\n' +
-        '  Society   : ' + socCount + ' records\n\n' +
-        'தற்போதைய data அனைத்தும் மாற்றப்படும்! தொடரவா?'
-      );
-      if (!confirmed) { input.value=''; return; }
-      purchase   = data.purchase   || [];
-      supervisor = data.supervisor || [];
-      society    = data.society    || [];
-      LS.set('purchase',   purchase);
-      LS.set('supervisor', supervisor);
-      LS.set('society',    society);
-      renderAll();
-      toast('\u2705 Restore வெற்றி! Purchase:' + pCount + ', Supervisor:' + supCount + ', Society:' + socCount + ' records ஏற்றப்பட்டது.', 'success');
-      input.value = '';
-    } catch(err) {
-      toast('\u274C File படிக்க முடியவில்லை. Valid JSON file தேர்ந்தெடுக்கவும்.', 'error');
+function openRestoreModal() {
+  document.getElementById('restorePasteBox').value = '';
+  document.getElementById('restoreModal').classList.add('show');
+}
+function closeRestoreModal() { document.getElementById('restoreModal').classList.remove('show'); }
+
+function restoreFromPaste() {
+  const raw = document.getElementById('restorePasteBox').value.trim();
+  if (!raw) { toast('❌ JSON paste பண்ணவும்!', 'error'); return; }
+  try {
+    const data = JSON.parse(raw);
+    if (!data.purchase && !data.supervisor && !data.society) {
+      toast('❌ தவறான backup data!', 'error'); return;
     }
-  };
-  reader.readAsText(file);
+    const pCount   = (data.purchase   || []).length;
+    const supCount = (data.supervisor || []).length;
+    const socCount = (data.society    || []).length;
+    const confirmed = confirm(
+      'Restore Confirmation\n\n' +
+      'Purchase  : ' + pCount + ' records\n' +
+      'Supervisor: ' + supCount + ' records\n' +
+      'Society   : ' + socCount + ' records\n\n' +
+      'தற்போதைய data மாற்றப்படும். தொடரவா?'
+    );
+    if (!confirmed) return;
+    purchase   = data.purchase   || [];
+    supervisor = data.supervisor || [];
+    society    = data.society    || [];
+    LS.set('purchase',   purchase);
+    LS.set('supervisor', supervisor);
+    LS.set('society',    society);
+    renderAll();
+    closeRestoreModal();
+    toast('✅ Restore வெற்றி! ' + pCount + '+' + supCount + '+' + socCount + ' records ஏற்றப்பட்டது.', 'success');
+  } catch(err) {
+    toast('❌ Invalid JSON! சரியாக copy பண்ணவும்.', 'error');
+  }
 }
 
 function dlFile(content, type, name) {
@@ -1023,7 +1036,7 @@ function toast(msg, type='success') {
 }
 
 // ======= CLOSE MODALS =======
-['importModal','syncModal'].forEach(id => {
+['importModal','syncModal','restoreModal'].forEach(id => {
   document.getElementById(id).addEventListener('click', function(e) {
     if(e.target===this) this.classList.remove('show');
   });
